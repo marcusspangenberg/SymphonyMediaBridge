@@ -416,7 +416,7 @@ set(FILES
         webrtc/DataChannel.h
         webrtc/WebRtcDataStream.cpp
         webrtc/WebRtcDataStream.h
-        )
+        bridge/engine/RtpHeaderExtensionRewriter.h)
 
 add_executable(smb
         ${FILES}

@@ -194,34 +194,4 @@ inline uint16_t rewriteRtxPacket(memory::Packet& packet,
 
 } // namespace Vp8Rewriter
 
-inline void rewriteHeaderExtensions(rtp::RtpHeader* rtpHeader,
-    const bridge::SsrcInboundContext& senderInboundContext,
-    const bridge::SsrcOutboundContext& receiverOutboundContext)
-{
-    assert(rtpHeader);
-
-    const auto headerExtensions = rtpHeader->getExtensionHeader();
-    if (!headerExtensions)
-    {
-        return;
-    }
-
-    const bool senderHasAbsSendTimeEx = senderInboundContext.rtpMap.absSendTimeExtId.isSet();
-    const bool receiverHasAbsSendTimeEx = receiverOutboundContext.rtpMap.absSendTimeExtId.isSet();
-    const bool absSendTimeExNeedToBeRewritten = senderHasAbsSendTimeEx && receiverHasAbsSendTimeEx &&
-        senderInboundContext.rtpMap.absSendTimeExtId.get() != receiverOutboundContext.rtpMap.absSendTimeExtId.get();
-
-    if (absSendTimeExNeedToBeRewritten)
-    {
-        for (auto& rtpHeaderExtension : headerExtensions->extensions())
-        {
-            if (rtpHeaderExtension.getId() == senderInboundContext.rtpMap.absSendTimeExtId.get())
-            {
-                rtpHeaderExtension.setId(receiverOutboundContext.rtpMap.absSendTimeExtId.get());
-                return;
-            }
-        }
-    }
-}
-
 } // namespace bridge

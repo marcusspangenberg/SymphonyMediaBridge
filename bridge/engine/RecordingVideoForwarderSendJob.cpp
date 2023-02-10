@@ -1,6 +1,7 @@
 #include "bridge/engine/RecordingVideoForwarderSendJob.h"
 #include "bridge/engine/EngineMessageListener.h"
 #include "bridge/engine/PacketCache.h"
+#include "bridge/engine/RtpHeaderExtensionRewriter.h"
 #include "bridge/engine/SsrcInboundContext.h"
 #include "bridge/engine/SsrcOutboundContext.h"
 #include "bridge/engine/Vp8Rewriter.h"
@@ -116,7 +117,7 @@ void RecordingVideoForwarderSendJob::run()
     }
 
     rtpHeader->payloadType = _outboundContext.rtpMap.payloadType;
-    rewriteHeaderExtensions(rtpHeader, _senderInboundContext, _outboundContext);
+    RtpHeaderExtensionRewriter::rewriteVideo(rtpHeader, _senderInboundContext, _outboundContext);
 
     if (_outboundContext.packetCache.isSet() && _outboundContext.packetCache.get())
     {

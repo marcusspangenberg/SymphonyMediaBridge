@@ -1,40 +1,11 @@
 #include "bridge/engine/AudioForwarderRewriteAndSendJob.h"
 #include "bridge/engine/AudioRewriter.h"
+#include "bridge/engine/RtpHeaderExtensionRewriter.h"
 #include "bridge/engine/SsrcInboundContext.h"
 #include "bridge/engine/SsrcOutboundContext.h"
 #include "codec/Opus.h"
 #include "rtp/RtpHeader.h"
 #include "transport/Transport.h"
-
-namespace
-{
-
-inline void rewriteHeaderExtensions(rtp::RtpHeader& rtpHeader,
-    const bridge::SsrcInboundContext& senderInboundContext,
-    const bridge::SsrcOutboundContext& receiverOutboundContext)
-{
-    const auto headerExtensions = rtpHeader.getExtensionHeader();
-    if (!headerExtensions)
-    {
-        return;
-    }
-
-    for (auto& rtpHeaderExtension : headerExtensions->extensions())
-    {
-        if (senderInboundContext.rtpMap.audioLevelExtId.isSet() &&
-            rtpHeaderExtension.getId() == senderInboundContext.rtpMap.audioLevelExtId.get())
-        {
-            rtpHeaderExtension.setId(receiverOutboundContext.rtpMap.audioLevelExtId.get());
-        }
-        else if (senderInboundContext.rtpMap.absSendTimeExtId.isSet() &&
-            rtpHeaderExtension.getId() == senderInboundContext.rtpMap.absSendTimeExtId.get())
-        {
-            rtpHeaderExtension.setId(receiverOutboundContext.rtpMap.absSendTimeExtId.get());
-        }
-    }
-}
-
-} // namespace
 
 namespace bridge
 {
@@ -78,7 +49,7 @@ void AudioForwarderRewriteAndSendJob::run()
 
     bridge::AudioRewriter::rewrite(_outboundContext, _extendedSequenceNumber, *header);
 
-    rewriteHeaderExtensions(*header, _senderInboundContext, _outboundContext);
+    RtpHeaderExtensionRewriter::rewriteAudio(*header, _senderInboundContext, _outboundContext);
     _transport.protectAndSend(std::move(_packet));
 }
 
