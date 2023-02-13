@@ -161,7 +161,7 @@ TEST_F(Vp8RewriterTest, rewriteRtx)
     memcpy(copyHead, payload, packet->getLength() - headerLength);
     rtxPacket->setLength(packet->getLength() + sizeof(uint16_t));
 
-    const bridge::RtpMap rtxRtpMap(bridge::RtpMap::Format::VP8RTX);
+    const bridge::RtpMap rtxRtpMap(bridge::RtpMap::Format::RTX);
     auto rtxHeader = rtp::RtpHeader::fromPacket(*rtxPacket);
     rtxHeader->ssrc = 2;
     rtxHeader->sequenceNumber = 2;

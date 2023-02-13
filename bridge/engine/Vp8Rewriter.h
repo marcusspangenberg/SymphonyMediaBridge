@@ -192,6 +192,108 @@ inline uint16_t rewriteRtxPacket(memory::Packet& packet,
     return originalSequenceNumber;
 }
 
+inline bool rewriteH264(SsrcOutboundContext& ssrcOutboundContext,
+    memory::Packet& rewritePacket,
+    const uint32_t extendedSequenceNumber,
+    const char* transportName,
+    uint32_t& outExtendedSequenceNumber,
+    bool isKeyFrame = false)
+{
+    auto rtpHeader = rtp::RtpHeader::fromPacket(rewritePacket);
+    if (!rtpHeader)
+    {
+        assert(false);
+        return false;
+    }
+
+    const auto timestamp = rtpHeader->timestamp.get();
+    const auto ssrc = rtpHeader->ssrc.get();
+
+    auto& ssrcRewrite = ssrcOutboundContext.rewrite;
+    if (ssrcRewrite.empty())
+    {
+        ssrcOutboundContext.originalSsrc = ssrc - 1; // to make it differ in next check
+        ssrcRewrite.lastSent.sequenceNumber = extendedSequenceNumber - 1;
+        ssrcRewrite.lastSent.timestamp = timestamp;
+        logger::info("%s start ssrc %u -> %u, sequence %u roc %u",
+            "Vp8Rewriter",
+            transportName,
+            rtpHeader->ssrc.get(),
+            ssrcOutboundContext.ssrc,
+            extractSequenceNumber(extendedSequenceNumber),
+            extractRolloverCounter(extendedSequenceNumber));
+    }
+
+    if (ssrcOutboundContext.originalSsrc != ssrc)
+    {
+        ssrcOutboundContext.originalSsrc = ssrc;
+        ssrcRewrite.offset.sequenceNumber =
+            math::ringDifference<uint32_t, 32>(extendedSequenceNumber, ssrcRewrite.lastSent.sequenceNumber + 1);
+        ssrcRewrite.sequenceNumberStart = extendedSequenceNumber;
+
+        ssrcRewrite.offset.timestamp =
+            math::ringDifference<uint32_t, 32>(timestamp, ssrcRewrite.lastSent.timestamp + 500);
+
+        REWRITER_LOG("%s new offset, ssrc %u, oseq %d, oTimestamp %d",
+            "Vp8Rewriter",
+            transportName,
+            rtpHeader->ssrc.get(),
+            ssrcRewrite.offset.sequenceNumber,
+            ssrcRewrite.offset.timestamp);
+
+        logger::info("%s ssrc %u -> %u, sequence %u",
+            "Vp8Rewriter",
+            transportName,
+            rtpHeader->ssrc.get(),
+            ssrcOutboundContext.ssrc,
+            extendedSequenceNumber + ssrcRewrite.offset.sequenceNumber);
+    }
+    else if (static_cast<int32_t>(extendedSequenceNumber + ssrcRewrite.offset.sequenceNumber -
+                 ssrcRewrite.lastSent.sequenceNumber) > MAX_JUMP_AHEAD)
+    {
+        ssrcRewrite.offset.sequenceNumber =
+            math::ringDifference<uint32_t, 32>(extendedSequenceNumber, ssrcRewrite.lastSent.sequenceNumber + 1);
+        logger::debug("Major sequence number skip ssrc %u, seq %u, sent %u. Adjusting offset to hide it",
+            "Vp8Rewriter",
+            rtpHeader->ssrc.get(),
+            extendedSequenceNumber,
+            ssrcRewrite.lastSent.sequenceNumber);
+    }
+
+    outExtendedSequenceNumber = extendedSequenceNumber + ssrcRewrite.offset.sequenceNumber;
+    const auto newTimestamp = timestamp + ssrcRewrite.offset.timestamp;
+
+    rtpHeader->ssrc = ssrcOutboundContext.ssrc;
+    rtpHeader->sequenceNumber = outExtendedSequenceNumber & 0xFFFFu;
+    rtpHeader->timestamp = newTimestamp;
+
+    REWRITER_LOG("%s fwd ssrc %u -> %u, seq %u (%u) -> %u (%u), marker %u, ts %u -> %u",
+        "Vp8Rewriter",
+        transportName,
+        ssrc,
+        rtpHeader->ssrc.get(),
+        extractSequenceNumber(extendedSequenceNumber),
+        extractRolloverCounter(extendedSequenceNumber),
+        extractSequenceNumber(outExtendedSequenceNumber),
+        extractRolloverCounter(outExtendedSequenceNumber),
+        rtpHeader->marker,
+        timestamp,
+        newTimestamp);
+
+    if (static_cast<int32_t>(outExtendedSequenceNumber - ssrcRewrite.lastSent.sequenceNumber) > 0)
+    {
+        ssrcRewrite.lastSent.sequenceNumber = outExtendedSequenceNumber;
+        ssrcRewrite.lastSent.timestamp = newTimestamp;
+    }
+
+    if (isKeyFrame)
+    {
+        ssrcOutboundContext.lastKeyFrameSequenceNumber = outExtendedSequenceNumber;
+    }
+
+    return true;
+}
+
 } // namespace Vp8Rewriter
 
 } // namespace bridge

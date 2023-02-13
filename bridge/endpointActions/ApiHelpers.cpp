@@ -41,19 +41,57 @@ void addDefaultAudioProperties(api::EndpointDescription::Audio& audioChannel)
     audioChannel._rtpHeaderExtensions.emplace_back(8, "c9:params:rtp-hdrext:info");
 }
 
-void addDefaultVideoProperties(api::EndpointDescription::Video& videoChannel)
+void addVp8VideoProperties(api::EndpointDescription::Video& videoChannel)
 {
+    api::EndpointDescription::PayloadType vp8;
+    vp8._id = codec::Vp8::payloadType;
+    vp8._name = "VP8";
+    vp8._clockRate = codec::Vp8::sampleRate;
+    vp8._rtcpFeedbacks.emplace_back("goog-remb", utils::Optional<std::string>());
+    vp8._rtcpFeedbacks.emplace_back("nack", utils::Optional<std::string>());
+    vp8._rtcpFeedbacks.emplace_back("nack", utils::Optional<std::string>("pli"));
+    videoChannel.payloadTypes.push_back(vp8);
+}
+
+void addH264VideoProperties(api::EndpointDescription::Video& videoChannel,
+    const std::string& profileLevelId,
+    const uint32_t packetizationMode)
+{
+    api::EndpointDescription::PayloadType h264;
+    h264._id = 101;
+    h264._name = "H264";
+    h264._clockRate = codec::Vp8::sampleRate;
+    h264._parameters.emplace_back("level-asymmetry-allowed", "1");
+
+    if (packetizationMode != 0)
     {
-        api::EndpointDescription::PayloadType vp8;
-        vp8._id = codec::Vp8::payloadType;
-        vp8._name = "VP8";
-        vp8._clockRate = codec::Vp8::sampleRate;
-        vp8._rtcpFeedbacks.emplace_back("goog-remb", utils::Optional<std::string>());
-        vp8._rtcpFeedbacks.emplace_back("nack", utils::Optional<std::string>());
-        vp8._rtcpFeedbacks.emplace_back("nack", utils::Optional<std::string>("pli"));
-        videoChannel.payloadTypes.push_back(vp8);
+        logger::warn("ApiRequestHandler", "Unsupported H264 packetizationMode in config, using default 0");
+        h264._parameters.emplace_back("packetization-mode", "0");
+    }
+    else
+    {
+        h264._parameters.emplace_back("packetization-mode", "0");
     }
 
+    if (profileLevelId.empty() || profileLevelId.size() != 6)
+    {
+        logger::warn("ApiRequestHandler", "Malformed H264 profileLevelId in config, using default 42001f");
+        h264._parameters.emplace_back("profile-level-id", "42001f");
+    }
+    else
+    {
+        h264._parameters.emplace_back("profile-level-id", profileLevelId);
+    }
+
+    h264._parameters.emplace_back("profile-level-id", profileLevelId);
+    h264._rtcpFeedbacks.emplace_back("goog-remb", utils::Optional<std::string>());
+    h264._rtcpFeedbacks.emplace_back("nack", utils::Optional<std::string>());
+    h264._rtcpFeedbacks.emplace_back("nack", utils::Optional<std::string>("pli"));
+    videoChannel.payloadTypes.push_back(h264);
+}
+
+void addDefaultVideoProperties(api::EndpointDescription::Video& videoChannel)
+{
     {
         api::EndpointDescription::PayloadType vp8Rtx;
         vp8Rtx._id = codec::Vp8::rtxPayloadType;
@@ -221,9 +259,13 @@ bridge::RtpMap makeRtpMap(const api::EndpointDescription::Video& video,
     {
         rtpMap = bridge::RtpMap(bridge::RtpMap::Format::VP8, payloadType._id, payloadType._clockRate);
     }
+    else if (payloadType._name.compare("H264") == 0)
+    {
+        rtpMap = bridge::RtpMap(bridge::RtpMap::Format::H264, payloadType._id, payloadType._clockRate);
+    }
     else if (payloadType._name.compare("rtx") == 0)
     {
-        rtpMap = bridge::RtpMap(bridge::RtpMap::Format::VP8RTX, codec::Vp8::rtxPayloadType, codec::Vp8::sampleRate);
+        rtpMap = bridge::RtpMap(bridge::RtpMap::Format::RTX, codec::Vp8::rtxPayloadType, codec::Vp8::sampleRate);
     }
     else
     {

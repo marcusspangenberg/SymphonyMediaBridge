@@ -1,6 +1,7 @@
 #include "bridge/engine/VideoForwarderReceiveJob.h"
 #include "bridge/engine/EngineMixer.h"
 #include "bridge/engine/SendPliJob.h"
+#include "codec/H264Header.h"
 #include "codec/Vp8Header.h"
 #include "logger/Logger.h"
 #include "memory/Packet.h"
@@ -101,8 +102,12 @@ void VideoForwarderReceiveJob::run()
     const auto payload = rtpHeader->getPayload();
     const auto payloadSize = _packet->getLength() - rtpHeader->headerLength();
 
-    const auto payloadDescriptorSize = codec::Vp8Header::getPayloadDescriptorSize(payload, payloadSize);
-    const bool isKeyframe = codec::Vp8Header::isKeyFrame(payload, payloadDescriptorSize);
+    const auto payloadDescriptorSize = _ssrcContext.rtpMap.format == RtpMap::Format::VP8
+        ? codec::Vp8Header::getPayloadDescriptorSize(payload, payloadSize)
+        : codec::H264::getPayloadDescriptorSize();
+    const bool isKeyframe = _ssrcContext.rtpMap.format == RtpMap::Format::VP8
+        ? codec::Vp8Header::isKeyFrame(payload, payloadDescriptorSize)
+        : codec::H264::isKeyFrame(payload, payloadDescriptorSize);
 
     ++_ssrcContext.packetsProcessed;
     bool missingPacketsTrackerReset = false;
@@ -119,32 +124,22 @@ void VideoForwarderReceiveJob::run()
 
         if (isKeyframe)
         {
-            logger::info("Received key frame as first packet, %s ssrc %u seq %u, mark %u, pid %u, tid %d, picid %d, "
-                         "tl0picidx %d",
+            logger::info("Received key frame as first packet, %s ssrc %u seq %u, mark %u",
                 "VideoForwarderReceiveJob",
                 _sender->getLoggableId().c_str(),
                 _ssrcContext.ssrc,
                 sequenceNumber,
-                rtpHeader->marker,
-                codec::Vp8Header::getPartitionId(payload),
-                codec::Vp8Header::getTid(payload),
-                codec::Vp8Header::getPicId(payload),
-                codec::Vp8Header::getTl0PicIdx(payload));
+                rtpHeader->marker);
             _ssrcContext.pliScheduler.onKeyFrameReceived();
         }
         else
         {
-            logger::info(
-                "First packet was not key frame, %s ssrc %u seq %u, mark %u, pid %u, tid %d, picid %d, tl0picidx %d",
+            logger::info("First packet was not key frame, %s ssrc %u seq %u, mark %u",
                 "VideoForwarderReceiveJob",
                 _sender->getLoggableId().c_str(),
                 _ssrcContext.ssrc,
                 sequenceNumber,
-                rtpHeader->marker,
-                codec::Vp8Header::getPartitionId(payload),
-                codec::Vp8Header::getTid(payload),
-                codec::Vp8Header::getPicId(payload),
-                codec::Vp8Header::getTl0PicIdx(payload));
+                rtpHeader->marker);
 
             _ssrcContext.pliScheduler.onPliSent(_timestamp);
             _sender->getJobQueue().addJob<SendPliJob>(_localVideoSsrc, _ssrcContext.ssrc, *_sender, _allocator);
@@ -154,16 +149,12 @@ void VideoForwarderReceiveJob::run()
     {
         if (isKeyframe)
         {
-            logger::info("Received key frame, %s ssrc %u seq %u, mark %u, pid %u, tid %d, picid %d, tl0picidx %d",
+            logger::info("Received key frame, %s ssrc %u seq %u, mark %u",
                 "VideoForwarderReceiveJob",
                 _sender->getLoggableId().c_str(),
                 _ssrcContext.ssrc,
                 sequenceNumber,
-                rtpHeader->marker,
-                codec::Vp8Header::getPartitionId(payload),
-                codec::Vp8Header::getTid(payload),
-                codec::Vp8Header::getPicId(payload),
-                codec::Vp8Header::getTl0PicIdx(payload));
+                rtpHeader->marker);
 
             _ssrcContext.pliScheduler.onKeyFrameReceived();
             _ssrcContext.videoMissingPacketsTracker->reset(_timestamp);
@@ -188,14 +179,10 @@ void VideoForwarderReceiveJob::run()
 
     if (rtpHeader->marker && isKeyframe)
     {
-        logger::debug("end of key frame ssrc %u, seqno %u, pid %u, tid %d, picid %d, tl0picidx %d",
+        logger::debug("end of key frame ssrc %u, seqno %u",
             "VideoForwarderReceiveJob",
             _ssrcContext.ssrc,
-            rtpHeader->sequenceNumber.get(),
-            codec::Vp8Header::getPartitionId(payload),
-            codec::Vp8Header::getTid(payload),
-            codec::Vp8Header::getPicId(payload),
-            codec::Vp8Header::getTl0PicIdx(payload));
+            rtpHeader->sequenceNumber.get());
     }
 
     if (videoDumpFile != nullptr)

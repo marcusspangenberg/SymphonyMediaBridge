@@ -176,6 +176,7 @@ set(FILES
         bridge/engine/RecordingRtpNackReceiveJob.cpp
         bridge/engine/RecordingRtpNackReceiveJob.h
         bridge/engine/RecordingSendEventJob.cpp
+        bridge/engine/RtpHeaderExtensionRewriter.h
         bridge/engine/SendEngineMessageJob.h
         bridge/engine/SendPliJob.cpp
         bridge/engine/SendPliJob.h
@@ -211,6 +212,7 @@ set(FILES
         bwe/RateController.h
         codec/AudioLevel.cpp
         codec/AudioLevel.h
+        codec/H264Header.h
         codec/Opus.h
         codec/OpusDecoder.cpp
         codec/OpusDecoder.h
@@ -415,8 +417,7 @@ set(FILES
         webrtc/DataChannel.cpp
         webrtc/DataChannel.h
         webrtc/WebRtcDataStream.cpp
-        webrtc/WebRtcDataStream.h
-        bridge/engine/RtpHeaderExtensionRewriter.h)
+        webrtc/WebRtcDataStream.h)
 
 add_executable(smb
         ${FILES}

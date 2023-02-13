@@ -41,7 +41,7 @@ void RecordingVideoForwarderSendJob::run()
         return;
     }
 
-    if (_outboundContext.rtpMap.format == RtpMap::Format::VP8RTX)
+    if (_outboundContext.rtpMap.format == RtpMap::Format::RTX)
     {
         logger::warn("%s rtx packet should not reach rewrite and send. ssrc %u, seq %u",
             "RecordingVideoForwarderSendJob",
