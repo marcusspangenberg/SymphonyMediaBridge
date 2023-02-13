@@ -8,17 +8,12 @@
 namespace codec
 {
 
-namespace H264
+namespace H264Header
 {
 
 constexpr uint8_t getNalUnitType(const uint8_t nalHeader)
 {
     return nalHeader & 0x1f;
-}
-
-constexpr uint8_t getFuNalUnitType(const uint8_t fuHeader)
-{
-    return fuHeader & 0x1f;
 }
 
 constexpr uint8_t getFuNalStartBit(const uint8_t fuHeader)
@@ -38,7 +33,7 @@ inline bool isKeyFrameStapA(const uint8_t* payload, const size_t payloadSize)
         {
             return true;
         }
-        offset += 1 + ntoh(naluSize);
+        offset += 1 + ntohs(naluSize);
     }
     return false;
 }
@@ -58,7 +53,7 @@ inline bool isKeyFrame(const uint8_t* payload, const size_t payloadSize)
         return isKeyFrameStapA(payload, payloadSize);
     case 28:
     case 29:
-        return getFuNalUnitType(payload[1]) == 7 && getFuNalStartBit(payload[1]) != 0;
+        return getNalUnitType(payload[1]) == 7 && getFuNalStartBit(payload[1]) != 0;
     default:
         return false;
     }

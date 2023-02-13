@@ -542,6 +542,7 @@ set(TEST_FILES
     test/legacyapi/ParserTest.cpp
     test/legacyapi/GeneratorTest.cpp
     test/bridge/EngineStreamDirectorTest.cpp
+    test/codec/H264HeaderTest.cpp
     test/codec/Vp8HeaderTest.cpp
     test/bridge/ActiveMediaListTest.cpp
     test/bridge/BarbellMessagesTest.cpp

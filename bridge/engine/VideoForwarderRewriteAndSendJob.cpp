@@ -72,7 +72,7 @@ void VideoForwarderRewriteAndSendJob::run()
     const auto payloadSize = _packet->getLength() - rtpHeader->headerLength();
     const auto payload = rtpHeader->getPayload();
     const auto isKeyFrame = _outboundContext.rtpMap.format == RtpMap::Format::H264
-        ? codec::H264::isKeyFrame(payload, payloadSize)
+        ? codec::H264Header::isKeyFrame(payload, payloadSize)
         : codec::Vp8Header::isKeyFrame(payload, codec::Vp8Header::getPayloadDescriptorSize(payload, payloadSize));
 
     const auto ssrc = rtpHeader->ssrc.get();
