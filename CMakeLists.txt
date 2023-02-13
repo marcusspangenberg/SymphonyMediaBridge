@@ -176,7 +176,6 @@ set(FILES
         bridge/engine/RecordingRtpNackReceiveJob.cpp
         bridge/engine/RecordingRtpNackReceiveJob.h
         bridge/engine/RecordingSendEventJob.cpp
-        bridge/engine/RtpHeaderExtensionRewriter.h
         bridge/engine/RtpVideoRewriter.h
         bridge/engine/SendEngineMessageJob.h
         bridge/engine/SendPliJob.cpp
