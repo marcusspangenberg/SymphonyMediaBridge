@@ -22,7 +22,7 @@
 namespace bridge
 {
 
-namespace Vp8Rewriter
+namespace RtpVideoRewriter
 {
 constexpr int32_t MAX_JUMP_AHEAD = 0x10000 / 4;
 
@@ -36,7 +36,7 @@ constexpr uint16_t extractRolloverCounter(const uint32_t extendedSequenceNumber)
     return static_cast<uint16_t>(extendedSequenceNumber >> 16);
 }
 
-inline bool rewrite(SsrcOutboundContext& ssrcOutboundContext,
+inline bool rewriteVp8(SsrcOutboundContext& ssrcOutboundContext,
     memory::Packet& rewritePacket,
     const uint32_t extendedSequenceNumber,
     const char* transportName,
@@ -65,7 +65,7 @@ inline bool rewrite(SsrcOutboundContext& ssrcOutboundContext,
         ssrcRewrite.lastSent.tl0PicIdx = codec::Vp8Header::getTl0PicIdx(rtpPayload) - 1;
         ssrcRewrite.lastSent.timestamp = timestamp;
         logger::info("%s start ssrc %u -> %u, sequence %u roc %u",
-            "Vp8Rewriter",
+            "RtpVideoRewriter",
             transportName,
             rtpHeader->ssrc.get(),
             ssrcOutboundContext.ssrc,
@@ -88,7 +88,7 @@ inline bool rewrite(SsrcOutboundContext& ssrcOutboundContext,
             math::ringDifference<uint32_t, 32>(timestamp, ssrcRewrite.lastSent.timestamp + 500);
 
         REWRITER_LOG("%s new offset, ssrc %u, oseq %d, oPicId %d, otl0PicIdx %d, oTimestamp %d",
-            "Vp8Rewriter",
+            "RtpVideoRewriter",
             transportName,
             rtpHeader->ssrc.get(),
             ssrcRewrite.offset.sequenceNumber,
@@ -97,7 +97,7 @@ inline bool rewrite(SsrcOutboundContext& ssrcOutboundContext,
             ssrcRewrite.offset.timestamp);
 
         logger::info("%s ssrc %u -> %u, sequence %u",
-            "Vp8Rewriter",
+            "RtpVideoRewriter",
             transportName,
             rtpHeader->ssrc.get(),
             ssrcOutboundContext.ssrc,
@@ -109,7 +109,7 @@ inline bool rewrite(SsrcOutboundContext& ssrcOutboundContext,
         ssrcRewrite.offset.sequenceNumber =
             math::ringDifference<uint32_t, 32>(extendedSequenceNumber, ssrcRewrite.lastSent.sequenceNumber + 1);
         logger::debug("Major sequence number skip ssrc %u, seq %u, sent %u. Adjusting offset to hide it",
-            "Vp8Rewriter",
+            "RtpVideoRewriter",
             rtpHeader->ssrc.get(),
             extendedSequenceNumber,
             ssrcRewrite.lastSent.sequenceNumber);
@@ -128,7 +128,7 @@ inline bool rewrite(SsrcOutboundContext& ssrcOutboundContext,
 
     REWRITER_LOG(
         "%s fwd ssrc %u -> %u, seq %u (%u) -> %u (%u), marker %u, picId %d -> %d, tl0PicIdx %d -> %d, ts %u -> %u",
-        "Vp8Rewriter",
+        "RtpVideoRewriter",
         transportName,
         ssrc,
         rtpHeader->ssrc.get(),
@@ -178,7 +178,7 @@ inline uint16_t rewriteRtxPacket(memory::Packet& packet,
     packet.setLength(packet.getLength() - sizeof(uint16_t));
 
     REWRITER_LOG("%s rewriteRtxPacket ssrc %u -> %u, seq %u -> %u",
-        "Vp8Rewriter",
+        "RtpVideoRewriter",
         transportName,
         rtpHeader->ssrc.get(),
         mainSsrc,
@@ -216,7 +216,7 @@ inline bool rewriteH264(SsrcOutboundContext& ssrcOutboundContext,
         ssrcRewrite.lastSent.sequenceNumber = extendedSequenceNumber - 1;
         ssrcRewrite.lastSent.timestamp = timestamp;
         logger::info("%s start ssrc %u -> %u, sequence %u roc %u",
-            "Vp8Rewriter",
+            "RtpVideoRewriter",
             transportName,
             rtpHeader->ssrc.get(),
             ssrcOutboundContext.ssrc,
@@ -235,14 +235,14 @@ inline bool rewriteH264(SsrcOutboundContext& ssrcOutboundContext,
             math::ringDifference<uint32_t, 32>(timestamp, ssrcRewrite.lastSent.timestamp + 500);
 
         REWRITER_LOG("%s new offset, ssrc %u, oseq %d, oTimestamp %d",
-            "Vp8Rewriter",
+            "RtpVideoRewriter",
             transportName,
             rtpHeader->ssrc.get(),
             ssrcRewrite.offset.sequenceNumber,
             ssrcRewrite.offset.timestamp);
 
         logger::info("%s ssrc %u -> %u, sequence %u",
-            "Vp8Rewriter",
+            "RtpVideoRewriter",
             transportName,
             rtpHeader->ssrc.get(),
             ssrcOutboundContext.ssrc,
@@ -254,7 +254,7 @@ inline bool rewriteH264(SsrcOutboundContext& ssrcOutboundContext,
         ssrcRewrite.offset.sequenceNumber =
             math::ringDifference<uint32_t, 32>(extendedSequenceNumber, ssrcRewrite.lastSent.sequenceNumber + 1);
         logger::debug("Major sequence number skip ssrc %u, seq %u, sent %u. Adjusting offset to hide it",
-            "Vp8Rewriter",
+            "RtpVideoRewriter",
             rtpHeader->ssrc.get(),
             extendedSequenceNumber,
             ssrcRewrite.lastSent.sequenceNumber);
@@ -268,7 +268,7 @@ inline bool rewriteH264(SsrcOutboundContext& ssrcOutboundContext,
     rtpHeader->timestamp = newTimestamp;
 
     REWRITER_LOG("%s fwd ssrc %u -> %u, seq %u (%u) -> %u (%u), marker %u, ts %u -> %u",
-        "Vp8Rewriter",
+        "RtpVideoRewriter",
         transportName,
         ssrc,
         rtpHeader->ssrc.get(),
@@ -294,6 +294,6 @@ inline bool rewriteH264(SsrcOutboundContext& ssrcOutboundContext,
     return true;
 }
 
-} // namespace Vp8Rewriter
+} // namespace RtpVideoRewriter
 
 } // namespace bridge

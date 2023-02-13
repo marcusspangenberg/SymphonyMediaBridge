@@ -177,6 +177,7 @@ set(FILES
         bridge/engine/RecordingRtpNackReceiveJob.h
         bridge/engine/RecordingSendEventJob.cpp
         bridge/engine/RtpHeaderExtensionRewriter.h
+        bridge/engine/RtpVideoRewriter.h
         bridge/engine/SendEngineMessageJob.h
         bridge/engine/SendPliJob.cpp
         bridge/engine/SendPliJob.h
@@ -201,7 +202,6 @@ set(FILES
         bridge/engine/VideoNackReceiveJob.h
         bridge/engine/DiscardReceivedVideoPacketJob.h
         bridge/engine/DiscardReceivedVideoPacketJob.cpp
-        bridge/engine/Vp8Rewriter.h
         bridge/engine/SetMaxMediaBitrateJob.h
         bridge/engine/SetMaxMediaBitrateJob.cpp
         bwe/BandwidthEstimator.cpp
@@ -545,7 +545,7 @@ set(TEST_FILES
     test/codec/Vp8HeaderTest.cpp
     test/bridge/ActiveMediaListTest.cpp
     test/bridge/BarbellMessagesTest.cpp
-    test/bridge/Vp8RewriterTest.cpp
+    test/bridge/RtpVideoRewriterTest.cpp
     test/rtp/RtcpFeedbackTest.cpp
     test/bridge/PacketCacheTest.cpp
     test/rtp/RtcpNackBuilderTest.cpp

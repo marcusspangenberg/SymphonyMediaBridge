@@ -1,4 +1,4 @@
-#include "bridge/engine/Vp8Rewriter.h"
+#include "bridge/engine/RtpVideoRewriter.h"
 #include "bridge/engine/SsrcOutboundContext.h"
 #include "codec/Vp8Header.h"
 #include "memory/PacketPoolAllocator.h"
@@ -9,7 +9,7 @@
 namespace
 {
 
-static const uint32_t outboundSsrc = 12345;
+const uint32_t outboundSsrc = 12345;
 
 void examine(bridge::SsrcOutboundContext& outboundContext,
     memory::Packet& packet,
@@ -31,7 +31,7 @@ void examine(bridge::SsrcOutboundContext& outboundContext,
     codec::Vp8Header::setTl0PicIdx(payload, picIdx);
 
     uint32_t sequenceNumberAfterRewrite = 0;
-    bridge::Vp8Rewriter::rewrite(outboundContext, packet, seqNo, "", sequenceNumberAfterRewrite);
+    bridge::RtpVideoRewriter::rewrite(outboundContext, packet, seqNo, "", sequenceNumberAfterRewrite);
 
     EXPECT_EQ(outboundContext.ssrc, rtpHeader->ssrc.get());
     EXPECT_EQ(expectedSeqNo & 0xFFFFu, rtpHeader->sequenceNumber.get());
@@ -42,11 +42,11 @@ void examine(bridge::SsrcOutboundContext& outboundContext,
 
 } // namespace
 
-class Vp8RewriterTest : public ::testing::Test
+class RtpVideoRewriterTest : public ::testing::Test
 {
     void SetUp() override
     {
-        _allocator = std::make_unique<memory::PacketPoolAllocator>(16, "Vp8RewriterTest");
+        _allocator = std::make_unique<memory::PacketPoolAllocator>(16, "RtpVideoRewriterTest");
         _ssrcOutboundContext = std::make_unique<bridge::SsrcOutboundContext>(outboundSsrc,
             *_allocator,
             bridge::RtpMap(bridge::RtpMap::Format::VP8));
@@ -58,7 +58,7 @@ protected:
     std::unique_ptr<bridge::SsrcOutboundContext> _ssrcOutboundContext;
 };
 
-TEST_F(Vp8RewriterTest, ringDifference)
+TEST_F(RtpVideoRewriterTest, ringDifference)
 {
     uint16_t sequenceNumber0 = 22787;
     uint16_t sequenceNumber1 = 2112;
@@ -102,7 +102,7 @@ TEST_F(Vp8RewriterTest, ringDifference)
     }
 }
 
-TEST_F(Vp8RewriterTest, fullRing)
+TEST_F(RtpVideoRewriterTest, fullRing)
 {
     int32_t pattern[] = {0, 1, 2, 3, -4, -3, -2, -1};
     int32_t offset[8 * 8];
@@ -121,7 +121,7 @@ TEST_F(Vp8RewriterTest, fullRing)
     }
 }
 
-TEST_F(Vp8RewriterTest, rewrite)
+TEST_F(RtpVideoRewriterTest, rewrite)
 {
     auto packet = memory::makeUniquePacket(*_allocator);
     packet->setLength(packet->size);
@@ -135,7 +135,7 @@ TEST_F(Vp8RewriterTest, rewrite)
     examine(*_ssrcOutboundContext, *packet, 2, 1, 1000, 2, 1, 1, 2, 2);
 }
 
-TEST_F(Vp8RewriterTest, rewriteRtx)
+TEST_F(RtpVideoRewriterTest, rewriteRtx)
 {
     const uint8_t vp8PayloadType = 100;
     // Make RTP packet
@@ -169,7 +169,7 @@ TEST_F(Vp8RewriterTest, rewriteRtx)
 
     // Rewrite RTX
     const auto originalSequenceNumber =
-        bridge::Vp8Rewriter::rewriteRtxPacket(*rtxPacket, 1, vp8PayloadType, "transport");
+        bridge::RtpVideoRewriter::rewriteRtxPacket(*rtxPacket, 1, vp8PayloadType, "transport");
 
     // Validate
     auto rewrittenRtpHeader = rtp::RtpHeader::fromPacket(*rtxPacket);
@@ -179,7 +179,7 @@ TEST_F(Vp8RewriterTest, rewriteRtx)
     EXPECT_EQ(vp8PayloadType, rewrittenRtpHeader->payloadType);
 }
 
-TEST_F(Vp8RewriterTest, countersAreConsecutiveWhenSsrcIsUnchanged)
+TEST_F(RtpVideoRewriterTest, countersAreConsecutiveWhenSsrcIsUnchanged)
 {
     auto packet = memory::makeUniquePacket(*_allocator);
     packet->setLength(packet->size);
@@ -194,7 +194,7 @@ TEST_F(Vp8RewriterTest, countersAreConsecutiveWhenSsrcIsUnchanged)
     examine(*_ssrcOutboundContext, *packet, 1, 3, 3, 3, 3, 3, 3, 3);
 }
 
-TEST_F(Vp8RewriterTest, countersAreConsecutiveWhenSsrcIsChanged)
+TEST_F(RtpVideoRewriterTest, countersAreConsecutiveWhenSsrcIsChanged)
 {
     auto packet = memory::makeUniquePacket(*_allocator);
     packet->setLength(packet->size);
@@ -209,7 +209,7 @@ TEST_F(Vp8RewriterTest, countersAreConsecutiveWhenSsrcIsChanged)
     examine(*_ssrcOutboundContext, *packet, 2, 10, 10000, 3, 10, 10, 3, 3);
 }
 
-TEST_F(Vp8RewriterTest, countersAreConsecutiveWhenSsrcIsChangedSequenceNumberLower)
+TEST_F(RtpVideoRewriterTest, countersAreConsecutiveWhenSsrcIsChangedSequenceNumberLower)
 {
     auto packet = memory::makeUniquePacket(*_allocator);
     packet->setLength(packet->size);
@@ -224,7 +224,7 @@ TEST_F(Vp8RewriterTest, countersAreConsecutiveWhenSsrcIsChangedSequenceNumberLow
     examine(*_ssrcOutboundContext, *packet, 2, 65535, 10000, 3, 10, 10, 3, 3);
 }
 
-TEST_F(Vp8RewriterTest, countersAreConsecutiveIfLastPacketBeforeSwitchIsReordered)
+TEST_F(RtpVideoRewriterTest, countersAreConsecutiveIfLastPacketBeforeSwitchIsReordered)
 {
     auto packet = memory::makeUniquePacket(*_allocator);
     packet->setLength(packet->size);
@@ -242,7 +242,7 @@ TEST_F(Vp8RewriterTest, countersAreConsecutiveIfLastPacketBeforeSwitchIsReordere
     examine(*_ssrcOutboundContext, *packet, 2, 10, 10, 4, 10, 10, 4, 4);
 }
 
-TEST_F(Vp8RewriterTest, countersAreConsecutiveWhenSsrcIsUnchangedAndSequenceRollover)
+TEST_F(RtpVideoRewriterTest, countersAreConsecutiveWhenSsrcIsUnchangedAndSequenceRollover)
 {
     auto packet = memory::makeUniquePacket(*_allocator);
     packet->setLength(packet->size);
@@ -259,7 +259,7 @@ TEST_F(Vp8RewriterTest, countersAreConsecutiveWhenSsrcIsUnchangedAndSequenceRoll
     examine(*_ssrcOutboundContext, *packet, 1, 0x10001, 3, 0x10001, 3, 3, 3, 3);
 }
 
-TEST_F(Vp8RewriterTest, countersAreConsecutiveIfLastPacketBeforeSwitchIsReorderedWithRollover)
+TEST_F(RtpVideoRewriterTest, countersAreConsecutiveIfLastPacketBeforeSwitchIsReorderedWithRollover)
 {
     auto packet = memory::makeUniquePacket(*_allocator);
     packet->setLength(packet->size);
@@ -276,7 +276,7 @@ TEST_F(Vp8RewriterTest, countersAreConsecutiveIfLastPacketBeforeSwitchIsReordere
     examine(*_ssrcOutboundContext, *packet, 2, 4711 + 0x10000, 10, 0x10001, 10, 10, 4, 4);
 }
 
-TEST_F(Vp8RewriterTest, longGapInSequenceNumbersSameSsrc)
+TEST_F(RtpVideoRewriterTest, longGapInSequenceNumbersSameSsrc)
 {
     auto packet = memory::makeUniquePacket(*_allocator);
     packet->setLength(packet->size);
@@ -290,7 +290,7 @@ TEST_F(Vp8RewriterTest, longGapInSequenceNumbersSameSsrc)
     examine(*_ssrcOutboundContext, *packet, 1, 10, 1000, 10, 3, 3, 3, 3);
 }
 
-TEST_F(Vp8RewriterTest, longGapInSequenceNumbersNewSsrc)
+TEST_F(RtpVideoRewriterTest, longGapInSequenceNumbersNewSsrc)
 {
     auto packet = memory::makeUniquePacket(*_allocator);
     packet->setLength(packet->size);
@@ -304,7 +304,7 @@ TEST_F(Vp8RewriterTest, longGapInSequenceNumbersNewSsrc)
     examine(*_ssrcOutboundContext, *packet, 2, 30000, 1, 10001, 3, 3, 2, 2);
 }
 
-TEST_F(Vp8RewriterTest, countersAreConsecutiveWhenSsrcChangeAndRtx)
+TEST_F(RtpVideoRewriterTest, countersAreConsecutiveWhenSsrcChangeAndRtx)
 {
     memory::PacketPoolAllocator packetAllocator(512, "test");
     bridge::RtpMap map1(bridge::RtpMap::Format::VP8);
@@ -340,7 +340,7 @@ TEST_F(Vp8RewriterTest, countersAreConsecutiveWhenSsrcChangeAndRtx)
     EXPECT_LT(lastTimestamp, rtpHeader->timestamp.get());
 }
 
-TEST_F(Vp8RewriterTest, seqSkipWithinMargin)
+TEST_F(RtpVideoRewriterTest, seqSkipWithinMargin)
 {
     constexpr int32_t MAX_JUMP_AHEAD = 0x10000 / 4;
 
@@ -357,7 +357,7 @@ TEST_F(Vp8RewriterTest, seqSkipWithinMargin)
     examine(*_ssrcOutboundContext, *packet, 1, MAX_JUMP_AHEAD + 1, 3, MAX_JUMP_AHEAD + 1, 3, 3, 3, 3);
 }
 
-TEST_F(Vp8RewriterTest, seqSkipWithinMarginRollover)
+TEST_F(RtpVideoRewriterTest, seqSkipWithinMarginRollover)
 {
     auto packet = memory::makeUniquePacket(*_allocator);
     packet->setLength(packet->size);
@@ -372,7 +372,7 @@ TEST_F(Vp8RewriterTest, seqSkipWithinMarginRollover)
     examine(*_ssrcOutboundContext, *packet, 1, 0x13F92 + 1, 3, 0x13F92 + 1, 3, 3, 3, 3);
 }
 
-TEST_F(Vp8RewriterTest, seqSkipBeyondMargin)
+TEST_F(RtpVideoRewriterTest, seqSkipBeyondMargin)
 {
     constexpr int32_t MAX_JUMP_AHEAD = 0x10000 / 4;
 
@@ -389,7 +389,7 @@ TEST_F(Vp8RewriterTest, seqSkipBeyondMargin)
     examine(*_ssrcOutboundContext, *packet, 1, MAX_JUMP_AHEAD + 11, 3, 3, 3, 3, 3, 3);
 }
 
-TEST_F(Vp8RewriterTest, seqSkipBeyondMarginRollover)
+TEST_F(RtpVideoRewriterTest, seqSkipBeyondMarginRollover)
 {
     auto packet = memory::makeUniquePacket(*_allocator);
     packet->setLength(packet->size);

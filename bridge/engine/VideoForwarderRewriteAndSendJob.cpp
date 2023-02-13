@@ -2,9 +2,9 @@
 #include "bridge/engine/EngineMessageListener.h"
 #include "bridge/engine/PacketCache.h"
 #include "bridge/engine/RtpHeaderExtensionRewriter.h"
+#include "bridge/engine/RtpVideoRewriter.h"
 #include "bridge/engine/SsrcInboundContext.h"
 #include "bridge/engine/SsrcOutboundContext.h"
-#include "bridge/engine/Vp8Rewriter.h"
 #include "codec/H264Header.h"
 #include "codec/Vp8Header.h"
 #include "transport/Transport.h"
@@ -122,28 +122,31 @@ void VideoForwarderRewriteAndSendJob::run()
 
     uint32_t rewrittenExtendedSequenceNumber = 0;
 
-    bool rewriteResult = false;
-    if (_outboundContext.rtpMap.format == RtpMap::Format::VP8)
+    switch (_outboundContext.rtpMap.format)
     {
-        rewriteResult = Vp8Rewriter::rewrite(_outboundContext,
-            *_packet,
-            _extendedSequenceNumber,
-            _transport.getLoggableId().c_str(),
-            rewrittenExtendedSequenceNumber,
-            isKeyFrame);
-    }
-    else if (_outboundContext.rtpMap.format == RtpMap::Format::H264)
-    {
-        rewriteResult = Vp8Rewriter::rewriteH264(_outboundContext,
-            *_packet,
-            _extendedSequenceNumber,
-            _transport.getLoggableId().c_str(),
-            rewrittenExtendedSequenceNumber,
-            isKeyFrame);
-    }
-
-    if (!rewriteResult)
-    {
+    case RtpMap::Format::H264:
+        if (!RtpVideoRewriter::rewriteH264(_outboundContext,
+                *_packet,
+                _extendedSequenceNumber,
+                _transport.getLoggableId().c_str(),
+                rewrittenExtendedSequenceNumber,
+                isKeyFrame))
+        {
+            return;
+        }
+        break;
+    case RtpMap::Format::VP8:
+        if (!RtpVideoRewriter::rewriteVp8(_outboundContext,
+                *_packet,
+                _extendedSequenceNumber,
+                _transport.getLoggableId().c_str(),
+                rewrittenExtendedSequenceNumber,
+                isKeyFrame))
+        {
+            return;
+        }
+        break;
+    default:
         return;
     }
 

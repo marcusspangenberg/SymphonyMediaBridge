@@ -2,9 +2,9 @@
 #include "bridge/engine/EngineMessageListener.h"
 #include "bridge/engine/PacketCache.h"
 #include "bridge/engine/RtpHeaderExtensionRewriter.h"
+#include "bridge/engine/RtpVideoRewriter.h"
 #include "bridge/engine/SsrcInboundContext.h"
 #include "bridge/engine/SsrcOutboundContext.h"
-#include "bridge/engine/Vp8Rewriter.h"
 #include "transport/Transport.h"
 
 namespace bridge
@@ -106,7 +106,7 @@ void RecordingVideoForwarderSendJob::run()
     }
 
     uint32_t rewrittenExtendedSequenceNumber = 0;
-    if (!Vp8Rewriter::rewrite(_outboundContext,
+    if (!RtpVideoRewriter::rewriteVp8(_outboundContext,
             *_packet,
             _extendedSequenceNumber,
             _transport.getLoggableId().c_str(),
