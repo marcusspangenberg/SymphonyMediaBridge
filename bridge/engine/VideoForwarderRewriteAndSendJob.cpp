@@ -69,11 +69,11 @@ void VideoForwarderRewriteAndSendJob::run()
         _mixerManager.onMessage(std::move(message));
     }
 
-    const bool isKeyFrame = _outboundContext.rtpMap.format == RtpMap::Format::VP8
-        ? codec::Vp8Header::isKeyFrame(rtpHeader->getPayload(),
-              codec::Vp8Header::getPayloadDescriptorSize(rtpHeader->getPayload(),
-                  _packet->getLength() - rtpHeader->headerLength()))
-        : codec::H264::isKeyFrame(rtpHeader->getPayload(), 1);
+    const auto payloadSize = _packet->getLength() - rtpHeader->headerLength();
+    const auto payload = rtpHeader->getPayload();
+    const auto isKeyFrame = _outboundContext.rtpMap.format == RtpMap::Format::H264
+        ? codec::H264::isKeyFrame(payload, payloadSize)
+        : codec::Vp8Header::isKeyFrame(payload, codec::Vp8Header::getPayloadDescriptorSize(payload, payloadSize));
 
     const auto ssrc = rtpHeader->ssrc.get();
     if (ssrc != _outboundContext.originalSsrc)

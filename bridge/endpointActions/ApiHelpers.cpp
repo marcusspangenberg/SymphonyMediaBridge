@@ -8,6 +8,7 @@
 #include "httpd/RequestErrorException.h"
 #include "utils/CheckedCast.h"
 #include "utils/Format.h"
+#include <string>
 
 namespace bridge
 {
@@ -58,19 +59,19 @@ void addH264VideoProperties(api::EndpointDescription::Video& videoChannel,
     const uint32_t packetizationMode)
 {
     api::EndpointDescription::PayloadType h264;
-    h264._id = 101;
+    h264._id = 100;
     h264._name = "H264";
     h264._clockRate = codec::Vp8::sampleRate;
     h264._parameters.emplace_back("level-asymmetry-allowed", "1");
 
-    if (packetizationMode != 0)
+    if (packetizationMode > 1)
     {
         logger::warn("ApiRequestHandler", "Unsupported H264 packetizationMode in config, using default 0");
         h264._parameters.emplace_back("packetization-mode", "0");
     }
     else
     {
-        h264._parameters.emplace_back("packetization-mode", "0");
+        h264._parameters.emplace_back("packetization-mode", std::to_string(packetizationMode));
     }
 
     if (profileLevelId.empty() || profileLevelId.size() != 6)

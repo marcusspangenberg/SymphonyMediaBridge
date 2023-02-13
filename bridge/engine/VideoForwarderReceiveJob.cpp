@@ -101,13 +101,9 @@ void VideoForwarderReceiveJob::run()
     const auto sequenceNumber = rtpHeader->sequenceNumber.get();
     const auto payload = rtpHeader->getPayload();
     const auto payloadSize = _packet->getLength() - rtpHeader->headerLength();
-
-    const auto payloadDescriptorSize = _ssrcContext.rtpMap.format == RtpMap::Format::VP8
-        ? codec::Vp8Header::getPayloadDescriptorSize(payload, payloadSize)
-        : codec::H264::getPayloadDescriptorSize();
-    const bool isKeyframe = _ssrcContext.rtpMap.format == RtpMap::Format::VP8
-        ? codec::Vp8Header::isKeyFrame(payload, payloadDescriptorSize)
-        : codec::H264::isKeyFrame(payload, payloadDescriptorSize);
+    const auto isKeyFrame = _ssrcContext.rtpMap.format == RtpMap::Format::H264
+        ? codec::H264::isKeyFrame(payload, payloadSize)
+        : codec::Vp8Header::isKeyFrame(payload, codec::Vp8Header::getPayloadDescriptorSize(payload, payloadSize));
 
     ++_ssrcContext.packetsProcessed;
     bool missingPacketsTrackerReset = false;
@@ -122,7 +118,7 @@ void VideoForwarderReceiveJob::run()
             _sender->getLoggableId().c_str(),
             _ssrcContext.ssrc);
 
-        if (isKeyframe)
+        if (isKeyFrame)
         {
             logger::info("Received key frame as first packet, %s ssrc %u seq %u, mark %u",
                 "VideoForwarderReceiveJob",
@@ -147,7 +143,7 @@ void VideoForwarderReceiveJob::run()
     }
     else
     {
-        if (isKeyframe)
+        if (isKeyFrame)
         {
             logger::info("Received key frame, %s ssrc %u seq %u, mark %u",
                 "VideoForwarderReceiveJob",
@@ -177,7 +173,7 @@ void VideoForwarderReceiveJob::run()
         }
     }
 
-    if (rtpHeader->marker && isKeyframe)
+    if (rtpHeader->marker && isKeyFrame)
     {
         logger::debug("end of key frame ssrc %u, seqno %u",
             "VideoForwarderReceiveJob",
