@@ -45,9 +45,9 @@ void addDefaultAudioProperties(api::EndpointDescription::Audio& audioChannel)
 void addVp8VideoProperties(api::EndpointDescription::Video& videoChannel)
 {
     api::EndpointDescription::PayloadType vp8;
-    vp8._id = codec::Vp8::payloadType;
+    vp8._id = 100;
     vp8._name = "VP8";
-    vp8._clockRate = codec::Vp8::sampleRate;
+    vp8._clockRate = 90000;
     vp8._rtcpFeedbacks.emplace_back("goog-remb", utils::Optional<std::string>());
     vp8._rtcpFeedbacks.emplace_back("nack", utils::Optional<std::string>());
     vp8._rtcpFeedbacks.emplace_back("nack", utils::Optional<std::string>("pli"));
@@ -61,7 +61,7 @@ void addH264VideoProperties(api::EndpointDescription::Video& videoChannel,
     api::EndpointDescription::PayloadType h264;
     h264._id = 100;
     h264._name = "H264";
-    h264._clockRate = codec::Vp8::sampleRate;
+    h264._clockRate = 90000;
     h264._parameters.emplace_back("level-asymmetry-allowed", "1");
 
     if (packetizationMode > 1)
@@ -95,7 +95,7 @@ void addDefaultVideoProperties(api::EndpointDescription::Video& videoChannel)
 {
     {
         api::EndpointDescription::PayloadType vp8Rtx;
-        vp8Rtx._id = codec::Vp8::rtxPayloadType;
+        vp8Rtx._id = 96;
         vp8Rtx._name = "rtx";
         vp8Rtx._clockRate = codec::Vp8::sampleRate;
         vp8Rtx._parameters.emplace_back("apt", std::to_string(codec::Vp8::payloadType));
